@@ -4,12 +4,13 @@ import { DocumentIcon, CogIcon } from '@heroicons/react/24/outline';
 
 interface ConversionPanelProps {
   files: UploadedFile[];
-  onConvert: (fileId: string, outputFormat: string) => void;
+  onConvert: (fileId: string, outputFormat: string, plateSettings?: { enabled: boolean; thickness: number; screwHoleDiameter: number }) => void;
   isProcessing: boolean;
 }
 
 const ConversionPanel: React.FC<ConversionPanelProps> = ({ files, onConvert, isProcessing }) => {
   const [selectedFormats, setSelectedFormats] = useState<{ [key: string]: string }>({});
+  const [tamiyaPlateSettings, setTamiyaPlateSettings] = useState<{ [key: string]: { enabled: boolean; thickness: number; screwHoleDiameter: number } }>({});
 
   const outputFormats = [
     { value: 'stl', label: 'STL', description: '3D printing ready format' },
@@ -25,9 +26,22 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({ files, onConvert, isP
     }));
   };
 
+  const handleTamiyaSettingChange = (fileId: string, setting: 'enabled' | 'thickness' | 'screwHoleDiameter', value: boolean | number) => {
+    setTamiyaPlateSettings(prev => ({
+      ...prev,
+      [fileId]: {
+        enabled: prev[fileId]?.enabled || false,
+        thickness: prev[fileId]?.thickness || 1.5,
+        screwHoleDiameter: prev[fileId]?.screwHoleDiameter || 2.05,
+        [setting]: value
+      }
+    }));
+  };
+
   const handleConvert = (fileId: string) => {
     const format = selectedFormats[fileId] || 'stl';
-    onConvert(fileId, format);
+    const plateSettings = tamiyaPlateSettings[fileId];
+    onConvert(fileId, format, plateSettings);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -114,6 +128,72 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({ files, onConvert, isP
                   </label>
                 ))}
               </div>
+            </div>
+
+            {/* Tamiya FRP/Carbon Plate Settings */}
+            <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="flex items-center mb-3">
+                <input
+                  type="checkbox"
+                  id={`tamiya-${file.id}`}
+                  checked={tamiyaPlateSettings[file.id]?.enabled || false}
+                  onChange={(e) => handleTamiyaSettingChange(file.id, 'enabled', e.target.checked)}
+                  className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor={`tamiya-${file.id}`} className="text-sm font-medium text-gray-700">
+                  Tamiya FRP/Carbon Plate Mode
+                </label>
+              </div>
+              
+              {tamiyaPlateSettings[file.id]?.enabled && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Plate Thickness
+                    </label>
+                    <div className="flex space-x-3">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name={`thickness-${file.id}`}
+                          value="1.5"
+                          checked={(tamiyaPlateSettings[file.id]?.thickness || 1.5) === 1.5}
+                          onChange={() => handleTamiyaSettingChange(file.id, 'thickness', 1.5)}
+                          className="mr-1 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-600">1.5mm</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name={`thickness-${file.id}`}
+                          value="3"
+                          checked={(tamiyaPlateSettings[file.id]?.thickness || 1.5) === 3}
+                          onChange={() => handleTamiyaSettingChange(file.id, 'thickness', 3)}
+                          className="mr-1 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-600">3.0mm</span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor={`screwhole-${file.id}`} className="block text-sm font-medium text-gray-700 mb-1">
+                      Screw Hole Diameter (mm)
+                    </label>
+                    <input
+                      type="number"
+                      id={`screwhole-${file.id}`}
+                      value={tamiyaPlateSettings[file.id]?.screwHoleDiameter || 2.05}
+                      onChange={(e) => handleTamiyaSettingChange(file.id, 'screwHoleDiameter', parseFloat(e.target.value) || 2.05)}
+                      step="0.01"
+                      min="1"
+                      max="5"
+                      className="w-24 px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Convert button */}
