@@ -2,8 +2,13 @@ class Mini4WDConverter {
     constructor() {
         this.apiBaseUrl = 'http://localhost:5000/api';
         this.uploadedFiles = [];
+        this.isGitHubPages = window.location.hostname.includes('github.io');
         this.initializeEventListeners();
         this.checkApiStatus();
+        
+        if (this.isGitHubPages) {
+            this.showDemoMode();
+        }
     }
 
     initializeEventListeners() {
@@ -22,6 +27,13 @@ class Mini4WDConverter {
 
     async checkApiStatus() {
         const statusDiv = document.getElementById('apiStatus');
+        
+        if (this.isGitHubPages) {
+            statusDiv.className = 'status warning';
+            statusDiv.innerHTML = '🌐 Demo Mode: This is a preview interface. Full functionality requires the backend server.';
+            statusDiv.style.display = 'block';
+            return;
+        }
         
         try {
             const response = await fetch(`${this.apiBaseUrl}/health`);
@@ -65,8 +77,38 @@ class Mini4WDConverter {
 
     async handleFileSelect(files) {
         for (let file of files) {
-            await this.uploadFile(file);
+            if (this.isGitHubPages) {
+                await this.handleFileDemoMode(file);
+            } else {
+                await this.uploadFile(file);
+            }
         }
+    }
+
+    async handleFileDemoMode(file) {
+        const fileId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        
+        // Add file to UI immediately
+        this.addFileToUI(file, fileId, 'uploading');
+        
+        // Simulate upload delay
+        setTimeout(() => {
+            const mockData = {
+                file_id: fileId,
+                original_name: file.name,
+                file_type: this.getFileType(file.name),
+                file_size: file.size,
+                validation: this.generateMockValidation(file.name)
+            };
+            
+            this.uploadedFiles.push({
+                ...mockData,
+                localId: fileId,
+                originalFile: file
+            });
+            
+            this.updateFileInUI(fileId, 'uploaded', mockData);
+        }, 2000);
     }
 
     async uploadFile(file) {
@@ -197,6 +239,18 @@ class Mini4WDConverter {
         
         this.updateFileInUI(localFileId, 'converting');
 
+        if (this.isGitHubPages) {
+            // Demo mode - simulate conversion
+            setTimeout(() => {
+                const mockResult = {
+                    output_file: `converted_${localFileId}.${selectedFormat}`,
+                    mini4wd_validation: this.generateMockValidation(`converted.${selectedFormat}`, true)
+                };
+                this.updateFileInUI(localFileId, 'converted', mockResult);
+            }, 3000);
+            return;
+        }
+
         try {
             const response = await fetch(`${this.apiBaseUrl}/convert`, {
                 method: 'POST',
@@ -223,6 +277,11 @@ class Mini4WDConverter {
     }
 
     async downloadFile(fileName) {
+        if (this.isGitHubPages) {
+            alert('Demo Mode: Download functionality requires the full application with backend server. Please see the documentation for setup instructions.');
+            return;
+        }
+        
         try {
             const response = await fetch(`${this.apiBaseUrl}/download/${fileName}`);
             
@@ -304,6 +363,69 @@ class Mini4WDConverter {
             ply: 'PLY Model'
         };
         return typeMap[ext] || 'Unknown';
+    }
+
+    showDemoMode() {
+        const header = document.querySelector('.header p');
+        header.innerHTML = 'Demo Mode: Interactive Preview of the Mini 4WD Converter Interface';
+        
+        // Add demo notice
+        const main = document.querySelector('.main');
+        const demoNotice = document.createElement('div');
+        demoNotice.className = 'status warning';
+        demoNotice.style.marginBottom = '20px';
+        demoNotice.innerHTML = `
+            <strong>🌐 Demo Mode Active</strong><br>
+            This is a preview of the Mini 4WD Converter interface. File processing is simulated.<br>
+            For full functionality, please <a href="../index.html" style="color: #3b82f6;">visit the documentation</a> to set up the complete application.
+        `;
+        main.insertBefore(demoNotice, main.firstChild);
+    }
+
+    generateMockValidation(filename, isConverted = false) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const isChassisFile = filename.toLowerCase().includes('chassis') || filename.toLowerCase().includes('frame');
+        const isWheelFile = filename.toLowerCase().includes('wheel') || filename.toLowerCase().includes('tire');
+        
+        const validationTypes = {
+            stl: {
+                valid: Math.random() > 0.3,
+                part_type: isChassisFile ? 'Chassis' : isWheelFile ? 'Wheel' : 'Custom Part',
+                dimensions: isChassisFile 
+                    ? { length: Math.floor(150 + Math.random() * 20), width: Math.floor(90 + Math.random() * 20), height: Math.floor(30 + Math.random() * 15) }
+                    : { length: Math.floor(25 + Math.random() * 10), width: Math.floor(25 + Math.random() * 10), height: Math.floor(8 + Math.random() * 8) },
+                errors: [],
+                warnings: []
+            },
+            obj: {
+                valid: Math.random() > 0.2,
+                part_type: 'Generic 3D Model',
+                dimensions: { length: Math.floor(40 + Math.random() * 80), width: Math.floor(40 + Math.random() * 80), height: Math.floor(10 + Math.random() * 30) },
+                errors: [],
+                warnings: ['Consider converting to STL for 3D printing']
+            },
+            svg: {
+                valid: true,
+                part_type: '2D Design',
+                errors: [],
+                warnings: ['2D files cannot be validated for Mini 4WD compatibility']
+            }
+        };
+
+        const baseValidation = validationTypes[ext] || validationTypes.obj;
+        
+        if (!baseValidation.valid) {
+            baseValidation.errors = ['Dimensions exceed Mini 4WD limits', 'Wall thickness too thin'];
+            baseValidation.warnings = ['Consider scaling down', 'Add reinforcement structures'];
+        }
+
+        if (isConverted) {
+            baseValidation.valid = true;
+            baseValidation.errors = [];
+            baseValidation.warnings = ['Conversion completed successfully'];
+        }
+
+        return baseValidation;
     }
 }
 
