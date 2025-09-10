@@ -57,7 +57,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({ files, onConvert, isP
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Convert Files</h2>
         <p className="text-gray-600">
-          Choose output format and convert your files for Mini 4WD compatibility
+          Choose output format and configure Tamiya FRP/Carbon plate settings for your Mini 4WD parts
         </p>
       </div>
 
@@ -131,7 +131,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({ files, onConvert, isP
             </div>
 
             {/* Tamiya FRP/Carbon Plate Settings */}
-            <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center mb-3">
                 <input
                   type="checkbox"
@@ -140,13 +140,13 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({ files, onConvert, isP
                   onChange={(e) => handleTamiyaSettingChange(file.id, 'enabled', e.target.checked)}
                   className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <label htmlFor={`tamiya-${file.id}`} className="text-sm font-medium text-gray-700">
-                  Tamiya FRP/Carbon Plate Mode
+                <label htmlFor={`tamiya-${file.id}`} className="text-sm font-medium text-blue-800">
+                  🏎️ Tamiya FRP/Carbon Plate Mode
                 </label>
               </div>
               
               {tamiyaPlateSettings[file.id]?.enabled && (
-                <div className="space-y-3">
+                <div className="space-y-3 bg-white p-3 rounded border border-blue-100">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Plate Thickness
@@ -161,7 +161,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({ files, onConvert, isP
                           onChange={() => handleTamiyaSettingChange(file.id, 'thickness', 1.5)}
                           className="mr-1 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="text-sm text-gray-600">1.5mm</span>
+                        <span className="text-sm text-gray-600">1.5mm (FRP)</span>
                       </label>
                       <label className="flex items-center">
                         <input
@@ -172,7 +172,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({ files, onConvert, isP
                           onChange={() => handleTamiyaSettingChange(file.id, 'thickness', 3)}
                           className="mr-1 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="text-sm text-gray-600">3.0mm</span>
+                        <span className="text-sm text-gray-600">3.0mm (Carbon)</span>
                       </label>
                     </div>
                   </div>
@@ -191,6 +191,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({ files, onConvert, isP
                       max="5"
                       className="w-24 px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
                     />
+                    <span className="ml-2 text-xs text-gray-500">Default: 2.05mm</span>
                   </div>
                 </div>
               )}
