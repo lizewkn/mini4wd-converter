@@ -57,15 +57,24 @@ function App() {
     }
   }, []);
 
-  const handleConversion = useCallback(async (fileId: string, outputFormat: string) => {
+  const handleConversion = useCallback(async (fileId: string, outputFormat: string, plateSettings?: { enabled: boolean; thickness: number; screwHoleDiameter: number }) => {
     try {
       setIsProcessing(true);
       
-      const response = await axios.post('/api/convert', {
+      const requestData: any = {
         file_id: fileId,
         output_format: outputFormat,
         validate_mini4wd: true
-      });
+      };
+
+      if (plateSettings?.enabled) {
+        requestData.tamiya_plate_settings = {
+          thickness: plateSettings.thickness,
+          screw_hole_diameter: plateSettings.screwHoleDiameter
+        };
+      }
+      
+      const response = await axios.post('/api/convert', requestData);
       
       setFiles(prev => prev.map(file => 
         file.id === fileId 

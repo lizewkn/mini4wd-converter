@@ -80,7 +80,7 @@ class FileProcessor:
                 'errors': [f'Validation failed: {str(e)}']
             }
     
-    def convert_file(self, input_path, output_format):
+    def convert_file(self, input_path, output_format, tamiya_plate_settings=None):
         """Convert file to specified format"""
         start_time = time.time()
         
@@ -101,11 +101,11 @@ class FileProcessor:
                 
             elif input_ext == 'svg' and output_format in ['stl', 'obj']:
                 # SVG to 3D conversion (basic extrusion)
-                self._svg_to_3d(input_path, output_path, output_format)
+                self._svg_to_3d(input_path, output_path, output_format, tamiya_plate_settings)
                 
             elif input_ext in ['stl', 'obj', 'ply'] and output_format in ['stl', 'obj', 'ply']:
                 # 3D format conversion
-                self._convert_3d_format(input_path, output_path, output_format)
+                self._convert_3d_format(input_path, output_path, output_format, tamiya_plate_settings)
                 
             else:
                 return {
@@ -147,7 +147,7 @@ class FileProcessor:
         with open(output_path, 'w') as svg_file:
             svg_file.write(svg_content)
     
-    def _svg_to_3d(self, input_path, output_path, output_format):
+    def _svg_to_3d(self, input_path, output_path, output_format, tamiya_plate_settings=None):
         """Convert SVG to 3D by basic extrusion"""
         # This is a simplified conversion - in a real application you'd use
         # libraries like svg2mesh or implement proper SVG parsing and extrusion
@@ -155,19 +155,39 @@ class FileProcessor:
         if not trimesh:
             raise ImportError("trimesh library required for 3D conversion")
         
-        # Create a simple extruded rectangle as placeholder
-        # In a real implementation, you'd parse the SVG and extrude the paths
-        box = trimesh.creation.box(extents=[10, 10, 2])
+        # Use Tamiya plate settings if provided
+        if tamiya_plate_settings:
+            thickness = tamiya_plate_settings.get('thickness', 1.5)
+            screw_hole_diameter = tamiya_plate_settings.get('screw_hole_diameter', 2.05)
+            
+            # Create a plate with specified thickness instead of default box
+            # This is a placeholder - in real implementation you'd extrude the SVG shape
+            box = trimesh.creation.box(extents=[50, 30, thickness])
+            
+            # Add screw holes (simplified representation)
+            if screw_hole_diameter > 0:
+                # This is a placeholder for hole creation logic
+                pass
+        else:
+            # Create a simple extruded rectangle as placeholder
+            box = trimesh.creation.box(extents=[10, 10, 2])
         
         if output_format == 'stl':
             box.export(output_path)
         elif output_format == 'obj':
             box.export(output_path)
     
-    def _convert_3d_format(self, input_path, output_path, output_format):
+    def _convert_3d_format(self, input_path, output_path, output_format, tamiya_plate_settings=None):
         """Convert between 3D formats"""
         if not trimesh:
             raise ImportError("trimesh library required for 3D conversion")
         
         mesh = trimesh.load_mesh(input_path)
+        
+        # Apply Tamiya plate modifications if enabled
+        if tamiya_plate_settings:
+            # This is where you'd apply thickness adjustments and screw holes
+            # For now, just export the mesh as-is
+            pass
+            
         mesh.export(output_path)

@@ -100,6 +100,7 @@ def convert_file():
         file_id = data['file_id']
         output_format = data.get('output_format', 'stl').lower()
         validate_mini4wd = data.get('validate_mini4wd', True)
+        tamiya_plate_settings = data.get('tamiya_plate_settings')
         
         # Validate input file exists
         input_path = os.path.join(UPLOAD_FOLDER, file_id)
@@ -108,7 +109,7 @@ def convert_file():
         
         # Process conversion
         processor = FileProcessor()
-        result = processor.convert_file(input_path, output_format)
+        result = processor.convert_file(input_path, output_format, tamiya_plate_settings)
         
         if not result['success']:
             return jsonify({'error': result['error']}), 400
@@ -117,7 +118,7 @@ def convert_file():
         validation_result = None
         if validate_mini4wd and output_format in ['stl', 'obj']:
             validator = Mini4WDValidator()
-            validation_result = validator.validate_part(result['output_path'])
+            validation_result = validator.validate_part(result['output_path'], tamiya_plate_settings)
         
         response_data = {
             'success': True,
@@ -129,6 +130,9 @@ def convert_file():
         
         if validation_result:
             response_data['mini4wd_validation'] = validation_result
+            
+        if tamiya_plate_settings:
+            response_data['tamiya_plate_settings'] = tamiya_plate_settings
         
         return jsonify(response_data)
         

@@ -38,7 +38,7 @@ class Mini4WDValidator:
             }
         }
     
-    def validate_part(self, file_path):
+    def validate_part(self, file_path, tamiya_plate_settings=None):
         """Validate a 3D part for Mini 4WD compatibility"""
         try:
             if not trimesh:
@@ -65,18 +65,19 @@ class Mini4WDValidator:
             volume = mesh.volume if hasattr(mesh, 'volume') else 0
             is_watertight = mesh.is_watertight if hasattr(mesh, 'is_watertight') else False
             
-            # Determine part type based on dimensions and shape
-            part_type = self._classify_part(dimensions, mesh)
-            
-            # Perform validation based on part type
-            validation_result = self._validate_by_type(mesh, dimensions, part_type)
+            # If Tamiya plate mode is enabled, focus on FRP/Carbon plate validation
+            if tamiya_plate_settings:
+                validation_result = self._validate_tamiya_plate(mesh, dimensions, tamiya_plate_settings)
+            else:
+                # Original validation logic
+                part_type = self._classify_part(dimensions, mesh)
+                validation_result = self._validate_by_type(mesh, dimensions, part_type)
             
             # Add general mesh quality checks
             general_checks = self._check_mesh_quality(mesh)
             validation_result['mesh_quality'] = general_checks
             
-            # Add part classification info
-            validation_result['part_type'] = part_type
+            # Add basic info
             validation_result['dimensions'] = {
                 'length': round(dimensions[0], 2),
                 'width': round(dimensions[1], 2),
@@ -84,6 +85,10 @@ class Mini4WDValidator:
             }
             validation_result['volume'] = round(volume, 2) if volume > 0 else 0
             validation_result['is_watertight'] = is_watertight
+            
+            if tamiya_plate_settings:
+                validation_result['tamiya_plate_mode'] = True
+                validation_result['plate_settings'] = tamiya_plate_settings
             
             return validation_result
             
@@ -243,3 +248,58 @@ class Mini4WDValidator:
             quality['issues'].append('Mesh has holes or non-manifold geometry')
         
         return quality
+    
+    def _validate_tamiya_plate(self, mesh, dimensions, plate_settings):
+        """Validate Tamiya FRP/Carbon plate requirements"""
+        result = {
+            'valid': True,
+            'errors': [],
+            'warnings': [],
+            'suggestions': [],
+            'part_type': 'tamiya_frp_carbon_plate'
+        }
+        
+        length, width, height = dimensions
+        expected_thickness = plate_settings.get('thickness', 1.5)
+        screw_hole_diameter = plate_settings.get('screw_hole_diameter', 2.05)
+        
+        # Check if thickness matches expected value (with tolerance)
+        thickness_tolerance = 0.2  # 0.2mm tolerance
+        if abs(height - expected_thickness) > thickness_tolerance:
+            result['warnings'].append(
+                f'Plate thickness {height:.2f}mm differs from expected {expected_thickness}mm '
+                f'(tolerance: ±{thickness_tolerance}mm)'
+            )
+            result['suggestions'].append(f'Consider adjusting thickness to {expected_thickness}mm for Tamiya compatibility')
+        
+        # Check for reasonable plate dimensions
+        min_plate_size = 10  # 10mm minimum
+        max_plate_size = 160  # 160mm maximum
+        
+        if length < min_plate_size or width < min_plate_size:
+            result['warnings'].append(f'Plate dimensions ({length:.1f}×{width:.1f}mm) might be too small')
+        
+        if length > max_plate_size or width > max_plate_size:
+            result['warnings'].append(f'Plate dimensions ({length:.1f}×{width:.1f}mm) might be too large for Mini 4WD')
+        
+        # Check for watertight mesh (important for 3D printing)
+        if not mesh.is_watertight:
+            result['errors'].append('Plate mesh is not watertight - will cause 3D printing issues')
+            result['suggestions'].append('Fix mesh holes and ensure watertight geometry')
+            result['valid'] = False
+        
+        # FRP/Carbon specific recommendations
+        result['suggestions'].extend([
+            f'Recommended for FRP/Carbon plates: {expected_thickness}mm thickness',
+            f'Screw holes should be {screw_hole_diameter}mm diameter',
+            'Ensure proper fiber direction for FRP plates',
+            'Consider layer adhesion for 3D printed prototypes'
+        ])
+        
+        # Material-specific warnings
+        if expected_thickness == 1.5:
+            result['suggestions'].append('1.5mm thickness suitable for lightweight FRP plates')
+        elif expected_thickness == 3.0:
+            result['suggestions'].append('3.0mm thickness suitable for structural Carbon plates')
+        
+        return result
