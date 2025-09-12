@@ -4,13 +4,14 @@ import { DocumentIcon, CogIcon } from '@heroicons/react/24/outline';
 
 interface ConversionPanelProps {
   files: UploadedFile[];
-  onConvert: (fileId: string, outputFormat: string, plateSettings?: { enabled: boolean; thickness: number; screwHoleDiameter: number }) => void;
+  onConvert: (fileId: string, outputFormat: string, plateSettings?: { enabled: boolean; thickness: number; screwHoleDiameter: number }, excludeWheels?: boolean) => void;
   isProcessing: boolean;
 }
 
 const ConversionPanel: React.FC<ConversionPanelProps> = ({ files, onConvert, isProcessing }) => {
   const [selectedFormats, setSelectedFormats] = useState<{ [key: string]: string }>({});
   const [tamiyaPlateSettings, setTamiyaPlateSettings] = useState<{ [key: string]: { enabled: boolean; thickness: number; screwHoleDiameter: number } }>({});
+  const [excludeWheels, setExcludeWheels] = useState<{ [key: string]: boolean }>({});
 
   const outputFormats = [
     { value: 'stl', label: 'STL', description: '3D printing ready format' },
@@ -38,10 +39,18 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({ files, onConvert, isP
     }));
   };
 
+  const handleExcludeWheelsChange = (fileId: string, exclude: boolean) => {
+    setExcludeWheels(prev => ({
+      ...prev,
+      [fileId]: exclude
+    }));
+  };
+
   const handleConvert = (fileId: string) => {
     const format = selectedFormats[fileId] || 'stl';
     const plateSettings = tamiyaPlateSettings[fileId];
-    onConvert(fileId, format, plateSettings);
+    const excludeWheelsForFile = excludeWheels[fileId] || false;
+    onConvert(fileId, format, plateSettings, excludeWheelsForFile);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -195,6 +204,31 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({ files, onConvert, isP
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Mini 4WD Validation Settings */}
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center mb-3">
+                <span className="text-sm font-medium text-green-800 mr-4">
+                  🏎️ Mini 4WD Validation Options
+                </span>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id={`exclude-wheels-${file.id}`}
+                  checked={excludeWheels[file.id] || false}
+                  onChange={(e) => handleExcludeWheelsChange(file.id, e.target.checked)}
+                  className="mr-2 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                />
+                <label htmlFor={`exclude-wheels-${file.id}`} className="text-sm text-green-700">
+                  Exclude wheels from validation
+                </label>
+                <span className="ml-2 text-xs text-gray-500">
+                  (Skip validation for wheel parts)
+                </span>
+              </div>
             </div>
 
             {/* Convert button */}

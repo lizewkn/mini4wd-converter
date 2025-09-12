@@ -38,7 +38,7 @@ class Mini4WDValidator:
             }
         }
     
-    def validate_part(self, file_path, tamiya_plate_settings=None):
+    def validate_part(self, file_path, tamiya_plate_settings=None, exclude_wheels=False):
         """Validate a 3D part for Mini 4WD compatibility"""
         try:
             if not trimesh:
@@ -71,7 +71,19 @@ class Mini4WDValidator:
             else:
                 # Original validation logic
                 part_type = self._classify_part(dimensions, mesh)
-                validation_result = self._validate_by_type(mesh, dimensions, part_type)
+                
+                # Skip validation for wheels if exclude_wheels is True
+                if exclude_wheels and part_type == 'wheel':
+                    validation_result = {
+                        'valid': True,
+                        'part_type': part_type,
+                        'excluded': True,
+                        'errors': [],
+                        'warnings': [],
+                        'suggestions': ['Wheel validation excluded as requested']
+                    }
+                else:
+                    validation_result = self._validate_by_type(mesh, dimensions, part_type)
             
             # Add general mesh quality checks
             general_checks = self._check_mesh_quality(mesh)
