@@ -12,6 +12,25 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({ files, onDownload
   const renderValidationResults = (validation: any) => {
     if (!validation) return null;
 
+    // Check if validation was excluded
+    if (validation.excluded) {
+      return (
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+          <h4 className="font-medium text-blue-800 mb-2">ℹ️ Validation Excluded</h4>
+          <p className="text-sm text-blue-600">
+            {validation.part_type === 'wheel' ? 'Wheel validation was excluded as requested.' : 'Validation was excluded for this part type.'}
+          </p>
+          {validation.suggestions && validation.suggestions.length > 0 && (
+            <ul className="text-sm text-blue-600 mt-2 space-y-1">
+              {validation.suggestions.map((suggestion: string, index: number) => (
+                <li key={index}>• {suggestion}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-3">
         {/* Basic validation info */}

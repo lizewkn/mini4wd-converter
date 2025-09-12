@@ -199,6 +199,13 @@ class Mini4WDConverter {
                         </div>
                     </div>
                 </div>
+                <div class="validation-options" style="margin: 10px 0; padding: 10px; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 5px;">
+                    <label style="display: flex; align-items: center; font-size: 14px; color: #075985;">
+                        <input type="checkbox" id="excludeWheels-${fileId}" style="margin-right: 8px;">
+                        <span>🏎️ Exclude wheels from Mini 4WD validation</span>
+                    </label>
+                    <small style="color: #64748b; margin-left: 20px;">Skip validation for wheel parts</small>
+                </div>
                 <button class="btn btn-primary" onclick="converter.convertFile('${fileId}', '${data.file_id}')">
                     Convert File
                 </button>
@@ -236,6 +243,8 @@ class Mini4WDConverter {
     async convertFile(localFileId, serverFileId) {
         const fileElement = document.getElementById(`file-${localFileId}`);
         const selectedFormat = fileElement.querySelector('.format-option.selected')?.dataset.format || 'stl';
+        const excludeWheelsCheckbox = document.getElementById(`excludeWheels-${localFileId}`);
+        const excludeWheels = excludeWheelsCheckbox ? excludeWheelsCheckbox.checked : false;
         
         this.updateFileInUI(localFileId, 'converting');
 
@@ -260,7 +269,8 @@ class Mini4WDConverter {
                 body: JSON.stringify({
                     file_id: serverFileId,
                     output_format: selectedFormat,
-                    validate_mini4wd: true
+                    validate_mini4wd: true,
+                    exclude_wheels: excludeWheels
                 })
             });
 

@@ -57,14 +57,15 @@ function App() {
     }
   }, []);
 
-  const handleConversion = useCallback(async (fileId: string, outputFormat: string, plateSettings?: { enabled: boolean; thickness: number; screwHoleDiameter: number }) => {
+  const handleConversion = useCallback(async (fileId: string, outputFormat: string, plateSettings?: { enabled: boolean; thickness: number; screwHoleDiameter: number }, excludeWheels?: boolean) => {
     try {
       setIsProcessing(true);
       
       const requestData: any = {
         file_id: fileId,
         output_format: outputFormat,
-        validate_mini4wd: true
+        validate_mini4wd: true,
+        exclude_wheels: excludeWheels || false
       };
 
       if (plateSettings?.enabled) {
